@@ -1,6 +1,9 @@
 const sprites = new Image();
 sprites.src = './sprites.png';
 
+const hitSound = new Audio();
+hitSound.src = './effects/hit.wav';
+
 const canvas = document.querySelector('canvas');
 const context = canvas.getContext('2d');
 
@@ -82,7 +85,12 @@ function createBird() {
     velocity: 0,
     refresh() {
       if (collision(flappyBird, floor)) {
-        changeScreen(screens.init);
+        hitSound.play();
+
+        setTimeout(() => {
+          changeScreen(screens.init);
+        }, 500);
+        return
       }
 
       flappyBird.velocity += flappyBird.gravity;
@@ -142,7 +150,6 @@ const screens = {
       changeScreen(screens.game);
     },
     refresh() {
-
     }
   }
 };
