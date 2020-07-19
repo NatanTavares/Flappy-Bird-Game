@@ -59,28 +59,47 @@ const floor = {
   }
 }
 
-const flappyBird = {
-  spriteX: 0,
-  spriteY: 0,
-  width: 34,
-  height: 24,
-  x: 10,
-  y: 50,
-  gravity: 0.25,
-  velocity: 0,
-  refresh() {
-    flappyBird.velocity += flappyBird.gravity;
-    flappyBird.y += flappyBird.velocity;
-  },
-  draw() {
-    context.drawImage(
-      sprites,
-      flappyBird.spriteX, flappyBird.spriteY,
-      flappyBird.width, flappyBird.height,
-      flappyBird.x, flappyBird.y,
-      flappyBird.width, flappyBird.height
-    );  
+function collision(flappyBird, floor) {
+  const flappyBirdY = flappyBird.y + flappyBird.height;
+  const floorY = floor.y;
+
+  return (flappyBirdY >= floorY);
+}
+
+function createBird() {
+  const flappyBird = {
+    spriteX: 0,
+    spriteY: 0,
+    width: 34,
+    height: 24,
+    x: 10,
+    y: 50,
+    jumpSize: 4.6,
+    jump() {
+      flappyBird.velocity = - flappyBird.jumpSize;
+    },
+    gravity: 0.25,
+    velocity: 0,
+    refresh() {
+      if (collision(flappyBird, floor)) {
+        changeScreen(screens.init);
+      }
+
+      flappyBird.velocity += flappyBird.gravity;
+      flappyBird.y += flappyBird.velocity;
+    },
+    draw() {
+      context.drawImage(
+        sprites,
+        flappyBird.spriteX, flappyBird.spriteY,
+        flappyBird.width, flappyBird.height,
+        flappyBird.x, flappyBird.y,
+        flappyBird.width, flappyBird.height
+      );  
+    }
   }
+
+  return flappyBird;
 }
 
 const messageGetReady = {
@@ -99,18 +118,24 @@ const messageGetReady = {
   }
 } 
 
+const globals = {};
 let activeScreen = {};
 
 function changeScreen(newScreen) {
   activeScreen = newScreen;
+  
+  if (activeScreen.start) activeScreen.start();
 }
 
 const screens = {
   init: {
+    start() {
+      globals.flappyBird = createBird();
+    },
     draw() {
       background.draw();
       floor.draw();
-      flappyBird.draw();
+      globals.flappyBird.draw();
       messageGetReady.draw();
     },
     click() {
@@ -126,9 +151,13 @@ screens.game = {
   draw() {
     background.draw();
     floor.draw();
-    flappyBird.draw();
-  }, refresh() {
-    flappyBird.refresh();
+    globals.flappyBird.draw();
+  },
+  click() {
+    globals.flappyBird.jump();
+  },
+  refresh() {
+    globals.flappyBird.refresh();
   }
 };
 
