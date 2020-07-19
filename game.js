@@ -66,6 +66,12 @@ const flappyBird = {
   height: 24,
   x: 10,
   y: 50,
+  gravity: 0.25,
+  velocity: 0,
+  refresh() {
+    flappyBird.velocity += flappyBird.gravity;
+    flappyBird.y += flappyBird.velocity;
+  },
   draw() {
     context.drawImage(
       sprites,
@@ -78,11 +84,14 @@ const flappyBird = {
 }
 
 function loop() {
+  flappyBird.refresh();
+
+
   background.draw();
   floor.draw();
   flappyBird.draw();
 
-  flappyBird.y = flappyBird.y + .1;
+  
 
   requestAnimationFrame(loop);
 }
