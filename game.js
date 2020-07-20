@@ -88,8 +88,8 @@ function createBird() {
     spriteY: 0,
     width: 34,
     height: 24,
-    x: 10,
-    y: 50,
+    x: 30,
+    y: 190,
     jumpSize: 4.6,
     jump() {
       flappyBird.velocity = - flappyBird.jumpSize;
@@ -119,7 +119,7 @@ function createBird() {
     updateCurrentFrame() {
       const frameInterval = 10;
       const hasPassed = frames % frameInterval === 0;
-      
+
       if (hasPassed) {
         const baseOfIncrement = 1;
         const increment = flappyBird.currentFrame + baseOfIncrement;
@@ -157,7 +157,93 @@ const messageGetReady = {
       messageGetReady.w, messageGetReady.h    
     );
   }
-} 
+}
+
+function createPipe() {
+  const pipe = {
+    width: 52,
+    height: 400,
+    bottom: {
+      spriteX: 0,
+      spriteY: 169
+    },
+    top: {
+      spriteX: 52,
+      spriteY: 169
+    },
+    space: 90,
+    draw(){
+      pipe.pairs.forEach(pairs => {
+        const yRandom = pairs.y;
+
+        const pipeTopX = pairs.x;
+        const pipeTopY = yRandom;
+        
+        const pipeBottomX = pairs.x;
+        const pipeBottomY = pipe.height + pipe.space + yRandom;
+        context.drawImage(
+          sprites,
+          pipe.top.spriteX, pipe.top.spriteY,
+          pipe.width, pipe.height,
+          pipeTopX, pipeTopY,
+          pipe.width, pipe.height
+        )
+
+        context.drawImage(
+          sprites,
+          pipe.bottom.spriteX, pipe.bottom.spriteY,
+          pipe.width, pipe.height,
+          pipeBottomX, pipeBottomY,
+          pipe.width, pipe.height
+        )
+
+        pairs.topPipe = {
+          x: pipeTopX,
+          y: pipe.height + pipeTopY
+        }
+
+        pairs.bottomPipe = {
+          x: pipeBottomX,
+          y: pipeBottomY
+        }
+      });
+    },
+    collision(pairs) {
+      const headBird = globals.flappyBird.y;
+      const footBird = globals.flappyBird.y + globals.flappyBird.height;
+      if (globals.flappyBird.x >= pairs.x) {
+        if (headBird <= pairs.topPipe.y) {
+          return true;
+        }
+        if (footBird >= pairs.bottomPipe.y) {
+          return true;
+        }
+      }
+      return false;
+    },
+    pairs: [],
+    update() {
+      if (frames % 100 === 0) {
+        const newPipe = { x: canvas.width, y: (-150 * (Math.random() + 1)) };
+        pipe.pairs.push(newPipe);
+      }
+
+      pipe.pairs.forEach(pairs => {
+        pairs.x -= 2;
+
+        if (pairs.x <= -pipe.width) pipe.pairs.shift();
+
+        if (pipe.collision(pairs)) {
+          hitSound.play();
+          changeScreen(screens.init);
+          return
+        }
+      });
+    }
+  }
+
+  return pipe;
+}
 
 const globals = {};
 let activeScreen = {};
@@ -173,6 +259,7 @@ const screens = {
     start() {
       globals.flappyBird = createBird();
       globals.ground = createGround();
+      globals.pipe = createPipe();
     },
     draw() {
       background.draw();
@@ -192,6 +279,7 @@ const screens = {
 screens.game = {
   draw() {
     background.draw();
+    globals.pipe.draw();
     globals.ground.draw();
     globals.flappyBird.draw();
   },
@@ -200,6 +288,8 @@ screens.game = {
   },
   update() {
     globals.flappyBird.update();
+    globals.ground.update();
+    globals.pipe.update();
   }
 };
 
