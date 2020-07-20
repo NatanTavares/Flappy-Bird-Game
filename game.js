@@ -7,6 +7,8 @@ hitSound.src = './effects/hit.wav';
 const canvas = document.querySelector('canvas');
 const context = canvas.getContext('2d');
 
+let frames = 0;
+
 const background = {
   spriteX: 390,
   spriteY: 0,
@@ -36,37 +38,48 @@ const background = {
   }
 }
 
-const floor = {
-  spriteX: 0,
-  spriteY: 610,
-  width: 224,
-  height: 112,
-  x: 0,
-  y: canvas.height - 112,
-  draw() {
-    context.drawImage(
-      sprites,
-      floor.spriteX, floor.spriteY,
-      floor.width, floor.height,
-      floor.x, floor.y,
-      floor.width, floor.height
-    );
+function createGround() {
+  const ground = {
+    spriteX: 0,
+    spriteY: 610,
+    width: 224,
+    height: 112,
+    x: 0,
+    y: canvas.height - 112,
+    update() {
+      const groundMovement = 1;
+      const movement = ground.x -= groundMovement;
+      const repeatIn = ground.width / 2;
 
-    context.drawImage(
-      sprites,
-      floor.spriteX, floor.spriteY,
-      floor.width, floor.height,
-      (floor.x + floor.width), floor.y,
-      floor.width, floor.height
-    )
+      ground.x = movement % repeatIn; // crazy logic, i know
+    },
+    draw() {
+      context.drawImage(
+        sprites,
+        ground.spriteX, ground.spriteY,
+        ground.width, ground.height,
+        ground.x, ground.y,
+        ground.width, ground.height
+      );
+  
+      context.drawImage(
+        sprites,
+        ground.spriteX, ground.spriteY,
+        ground.width, ground.height,
+        (ground.x + ground.width), ground.y,
+        ground.width, ground.height
+      )
+    }
   }
+
+  return ground;
 }
 
-function collision(flappyBird, floor) {
+function collision(flappyBird, ground) {
   const flappyBirdY = flappyBird.y + flappyBird.height;
-  const floorY = floor.y;
+  const groundY = ground.y;
 
-  return (flappyBirdY >= floorY);
+  return (flappyBirdY >= groundY);
 }
 
 function createBird() {
@@ -83,8 +96,8 @@ function createBird() {
     },
     gravity: 0.25,
     velocity: 0,
-    refresh() {
-      if (collision(flappyBird, floor)) {
+    update() {
+      if (collision(flappyBird, globals.ground)) {
         hitSound.play();
 
         setTimeout(() => {
@@ -96,10 +109,30 @@ function createBird() {
       flappyBird.velocity += flappyBird.gravity;
       flappyBird.y += flappyBird.velocity;
     },
+    movements: [
+      { spriteX: 0, spriteY: 0 },
+      { spriteX: 0, spriteY: 26 },
+      { spriteX: 0, spriteY: 52 },
+      { spriteX: 0, spriteY: 26 }
+    ],
+    currentFrame: 0,
+    updateCurrentFrame() {
+      const frameInterval = 10;
+      const hasPassed = frames % frameInterval === 0;
+      
+      if (hasPassed) {
+        const baseOfIncrement = 1;
+        const increment = flappyBird.currentFrame + baseOfIncrement;
+        const baseOfRepeat = flappyBird.movements.length;
+        flappyBird.currentFrame = increment % baseOfRepeat;
+      }
+    },
     draw() {
+      flappyBird.updateCurrentFrame();
+      const { spriteX, spriteY } = flappyBird.movements[flappyBird.currentFrame];
       context.drawImage(
         sprites,
-        flappyBird.spriteX, flappyBird.spriteY,
+        spriteX, spriteY,
         flappyBird.width, flappyBird.height,
         flappyBird.x, flappyBird.y,
         flappyBird.width, flappyBird.height
@@ -139,17 +172,19 @@ const screens = {
   init: {
     start() {
       globals.flappyBird = createBird();
+      globals.ground = createGround();
     },
     draw() {
       background.draw();
-      floor.draw();
+      globals.ground.draw();
       globals.flappyBird.draw();
       messageGetReady.draw();
     },
     click() {
       changeScreen(screens.game);
     },
-    refresh() {
+    update() {
+      globals.ground.update();
     }
   }
 };
@@ -157,21 +192,22 @@ const screens = {
 screens.game = {
   draw() {
     background.draw();
-    floor.draw();
+    globals.ground.draw();
     globals.flappyBird.draw();
   },
   click() {
     globals.flappyBird.jump();
   },
-  refresh() {
-    globals.flappyBird.refresh();
+  update() {
+    globals.flappyBird.update();
   }
 };
 
 function loop() {
   activeScreen.draw();
-  activeScreen.refresh();
+  activeScreen.update();
   
+  frames++;
   requestAnimationFrame(loop);
 }
 
